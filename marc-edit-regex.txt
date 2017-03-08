@@ -1,0 +1,99 @@
+MarcEdit regex
+
+	Generate 035 from 001/generated 003 
+	remove 001
+	007 -- 05 blank, 06-13 fill chars
+		When some 007 fields are only 13 characters, to add a final character:
+		Find: (^=007.{15}$)
+		Replace: $1\	
+		
+	008 -- 23 o
+		Excel formula: =RIGHT(LEFT(A1,24),1)
+
+	remove second consecutive 008
+		Find: (=008.{2})(.*)(\r?\n)(=008.{42})(\r?\n)/m
+		Replace: $1$2$3   [with "multi-line evaluation" box checked!]
+
+	change 020 w/o subfield q to 020 $z
+		Find: (=020.{4})(\$a)(.{13}$)
+		Replace: $1$z$3
+	
+	020 is print, print, e
+		Find: (=020.{4})(\$a0)(.*)(\r?\n)(=020.{4})(\$a9)(.*)(\r?\n)(=020.{4})(\$a9)(.*)/m
+		Replace: $1$z0$3$4$5$z9$7$8$9$10$11	
+	
+	020a has print/pbk., etc in field
+		Find: (=020.{4})(\$a)(.*)(paper)(.*)
+		Replace: $1$z$3$4$5
+	020 edit
+		Find: (=020.{4})(\$a)(.*)(\$q)(.*)
+		Replace: $1$z$3$4$5
+		If: (=020.*)(\$q\()([^e])	
+
+	add 020$q when just a space and (
+		Find: (=020.{4})(.*)([1-9])(\s\()(.*)
+		Replace: $1$2$3$q($5
+
+	Created 020 from 776, has multiple $z to be split into separate fields
+		Find what: (=020.{4})(\$z.*[^$])(\$z.*)
+		Replace with: $1$2\n=020  \\$3
+
+	If =100 field present, change =245 first indicator to 1
+		Find what: (=100.{4}.*)(\r?\n)(=245  0)(.*)/m
+		Replace with: $1$2=245  1$4
+		[CHECK BOXES FOR "Use regular expressions" AND "MultiLine Evaluation"!!]
+
+	300 a
+		Field data: a(.+)\s([:,;])
+		Replace: a1 online resource ($1) $2
+		
+		(=300  ..)(\$a)(?!1 online resource)(.*)
+
+		IF SUBFIELD $a ONLY...
+		Field data: a(.*)(pages)(\.)
+		Replace with: a1 online resource ($1$2)$3
+
+		(\$a)(.*)(\s:\$b)
+		$1 1 online resource ($2)$3
+		
+		
+	add ending period to field if not already present
+		
+		(.*)([^\.]$)  -->  $1$2.
+
+		(=300.{4})(.*)(,\.)  -->  $1$2.
+			repeat with last clause as needed: (\s:\.), (;\.)
+		
+	300 c
+		remove $c
+		Field Data: b(.+)\s;
+		Replace: b$1
+		[repeat w/ a]
+
+	300 a  Edit field 300 
+		field data: (\$a)(?!1 online resource)(.*[^\s])([:,;\.\s])
+		replace with: $a1 online resource ($2$3).
+
+	Springer 300 fields
+		(\$a)(.{2})(illustrations)
+		$a1 online resource :$b
+
+	Find empty 776 field generated from 020$z
+		(=776.{4})(\$z$)
+
+	Find 300 field with 1 online resource but no period
+		(=300.{4})(\$a1 online resource$)
+		$1$2.	
+
+	Fix 776 generated from 020$z
+		Find:(=776\s\s\\\\)(\$z.*)(\$q)(.*)
+
+		Find: (=776\s\s\\\\)(\$z.*)(\:\$q)(.*)	
+		Replace: $1$2: $4
+
+		Find: (=776\s\s\\\\)(\$z)(.*)
+		Replace: $1$iAdditional form: $2$3
+	
+	Testing to see if can replace duplicates 100/700:
+		(=100.{4})(\$a)(.*)(\r?\n)(((.*)(\r?\n))+)(=700.{4})(\$a.*)(\r?\n)/m
+		$1$2$3$4$5$8
